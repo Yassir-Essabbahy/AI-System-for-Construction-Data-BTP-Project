@@ -1,58 +1,59 @@
-# BTP AI — RAG Pipeline for Construction Documents
+# BTP AI — Système RAG pour Documents de Construction
 
-A retrieval-augmented generation (RAG) system built for construction companies. Upload PDFs and emails, ask questions in natural language, and get answers grounded strictly in your documents — with source citations.
+Un système de génération augmentée par récupération (RAG) conçu pour les entreprises BTP. Importez des PDFs et des e-mails, posez des questions en langage naturel, et obtenez des réponses basées uniquement sur vos documents — avec citations des sources.
 
-**Stack:** Flask · Pinecone · Groq (LLaMA 3) · Pinecone Inference Embeddings · Vanilla HTML dashboard
+**Stack :** Flask · Pinecone · Groq (LLaMA 3) · Pinecone Inference Embeddings · Dashboard HTML
+
+🌐 **Démo en ligne :** [https://ai-system-for-construction-data-btp-project-production.up.railway.app](https://ai-system-for-construction-data-btp-project-production.up.railway.app)
 
 ---
 
-## Project Structure
+## Structure du projet
 
 ```
 .
-├── app.py              # Flask API — all endpoints
-├── config.py           # Environment variables and constants
-├── ingest.py           # Orchestrates chunking + embedding + upsert
-├── chunker.py          # Splits text into overlapping chunks
-├── embeddings.py       # Pinecone inference embeddings (batched)
-├── vectorstore.py      # Pinecone upsert / query / clear
-├── llm.py              # Groq LLM call + prompt builder + source filtering
-├── pdf_reader.py       # Extracts text page by page from PDFs
-├── dashboard.html      # Frontend — open directly in a browser
-└── .env                # Your secrets (never commit this)
+├── app.py              # API Flask — tous les endpoints
+├── config.py           # Variables d'environnement et constantes
+├── ingest.py           # Orchestration : découpage + embedding + upsert
+├── chunker.py          # Découpe le texte en chunks avec chevauchement
+├── embeddings.py       # Embeddings Pinecone (par lots de 96)
+├── vectorstore.py      # Upsert / requête / suppression dans Pinecone
+├── llm.py              # Appel Groq LLM + construction du prompt + filtrage des sources
+├── pdf_reader.py       # Extraction du texte page par page depuis les PDFs
+├── dashboard.html      # Interface utilisateur
+└── .env                # Secrets (ne jamais committer ce fichier)
 ```
 
 ---
 
-## Prerequisites
+## Prérequis
 
 - Python 3.10+
-- A [Pinecone](https://www.pinecone.io/) account (free tier works)
-- A [Groq](https://console.groq.com/) account (free tier works)
+- Un compte [Pinecone](https://www.pinecone.io/) (gratuit)
+- Un compte [Groq](https://console.groq.com/) (gratuit)
 
 ---
 
-## Setup
+## Installation
 
-**1. Clone the repo**
+**1. Cloner le dépôt**
 ```bash
-git clone https://github.com/your-username/btp-ai.git
-cd btp-ai
+git clone https://github.com/Yassir-Essabbahy/AI-System-for-Construction-Data-BTP-Project.git
+cd AI-System-for-Construction-Data-BTP-Project
 ```
 
-**2. Install dependencies**
+**2. Installer les dépendances**
 ```bash
-pip install flask flask-cors pinecone groq pypdf python-dotenv
+pip install flask flask-cors pinecone groq pypdf python-dotenv gunicorn
 ```
 
-**3. Create your `.env` file**
+**3. Créer le fichier `.env`**
 
-Create a file called `.env` at the root of the project:
 ```env
-GROQ_API_KEY=your_groq_api_key
-PINECONE_API_KEY=your_pinecone_api_key
+GROQ_API_KEY=votre_clé_groq
+PINECONE_API_KEY=votre_clé_pinecone
 
-# Optional — defaults shown below
+# Optionnel — valeurs par défaut indiquées
 PINECONE_INDEX_NAME=btp-ai
 PINECONE_CLOUD=aws
 PINECONE_REGION=us-east-1
@@ -64,203 +65,136 @@ TOP_K=5
 MIN_SCORE=0.5
 ```
 
-> `multilingual-e5-large` is a Pinecone-hosted embedding model — no separate API key needed, it uses your Pinecone key.
-
-**4. Start the Flask server**
+**4. Lancer le serveur**
 ```bash
 python app.py
 ```
 
-You should see:
-```
- * Running on http://0.0.0.0:5000
-```
-
-**5. Open the dashboard**
-
-Just open `dashboard.html` directly in your browser — no server needed for the frontend.
+Ouvrez ensuite [http://localhost:5000](http://localhost:5000) dans votre navigateur.
 
 ---
 
-## Testing the API
+## Test rapide — Guide pas à pas
 
-You can test every endpoint with `curl` or any REST client (Postman, Insomnia, etc.).
+### Documents de test
 
-### Health check
-```bash
-curl http://localhost:5000/health
-```
-Expected:
-```json
-{ "status": "ok" }
-```
+Deux PDFs sont fournis dans le dépôt pour tester le système :
+
+| Fichier | Contenu |
+|---|---|
+| `Asphalt.pdf` | Composition et propriétés de l'asphalte |
+| `Constuction_Specifications.pdf` | Cahier des charges complet : béton, toiture, plomberie, électricité |
 
 ---
 
-### Upload a PDF
-```bash
-curl -X POST http://localhost:5000/upload \
-  -F "file=@Asphalt.pdf" \
-  -F "project=Chantier A" \
-  -F "lot=VRD" \
-  -F "criticite=Haute"
-```
-Expected:
-```json
-{ "message": "PDF ingested.", "chunks_written": 3 }
-```
-`chunks_written` will vary depending on the size of your PDF.
+### Étape 1 — Importer un PDF via le dashboard
+
+1. Ouvrez le dashboard
+2. Cliquez sur **Documents** dans la barre latérale gauche
+3. Glissez-déposez `Constuction_Specifications.pdf` dans la zone de dépôt, ou cliquez sur **Choisir un fichier**
+4. Attendez que le statut passe à **INDEXÉ** ✅
 
 ---
 
-### Ingest emails
-```bash
-curl -X POST http://localhost:5000/ingest-emails \
-  -H "Content-Type: application/json" \
-  -d @emails.json_body.json
+### Étape 2 — Poser des questions sur le PDF
+
+Cliquez sur **Chat** et essayez ces questions :
+
+**Béton et matériaux**
+> Quelles sont les proportions du béton de classe A ?
+
+> Quelle marque de ciment est spécifiée dans le document ?
+
+> Quelles sont les exigences pour les armatures en acier ?
+
+**Finitions**
+> Quels matériaux sont utilisés pour les finitions de sol ?
+
+> Quelle marque de peinture est utilisée pour ce projet ?
+
+**Plomberie et électricité**
+> Quelles sont les spécifications de plomberie ?
+
+> Quelles normes électriques doivent être respectées ?
+
+**Question hors sujet — pour tester le mode strict**
+> Quel est le prix de l'acier aujourd'hui ?
+
+➡️ Réponse attendue : *"Je n'ai pas suffisamment d'informations dans les documents fournis."*
+
+---
+
+### Étape 3 — Importer des e-mails via l'API
+
+Depuis un terminal Windows (CMD), copiez-collez cette commande en une seule ligne :
+
+```
+curl -X POST https://ai-system-for-construction-data-btp-project-production.up.railway.app/ingest-emails -H "Content-Type: application/json" -d "{\"emails\":[{\"subject\":\"Retard chantier\",\"from\":\"client@btp.com\",\"date\":\"2026-05-01\",\"body\":\"Le delai du projet a ete prolonge jusqu en juin en raison de retards de materiaux.\",\"project\":\"Chantier A\",\"lot\":\"Gros Oeuvre\",\"criticite\":\"Haute\"}]}"
 ```
 
-Where `emails.json_body.json` contains:
-```json
-{
-  "emails": [
-    {
-      "subject": "Project delay update",
-      "from": "client@btp.com",
-      "date": "2026-05-01",
-      "body": "The project deadline has been extended to June due to material delays.",
-      "project": "Chantier A",
-      "lot": "Gros Oeuvre",
-      "criticite": "Haute"
-    }
-  ]
-}
-```
-Expected:
+Réponse attendue :
 ```json
 { "message": "Emails ingested.", "chunks_written": 1 }
 ```
 
----
-
-### Ingest plain text
-```bash
-curl -X POST http://localhost:5000/ingest-text \
-  -H "Content-Type: application/json" \
-  -d '{
-    "text": "Bitumen is a sticky black material derived from crude oil.",
-    "source": "internal-note",
-    "project": "Chantier B",
-    "lot": "VRD"
-  }'
-```
-Expected:
-```json
-{ "message": "Text ingested.", "chunks_written": 1 }
-```
+Puis posez cette question dans le chat :
+> Quel est le statut du Chantier A ?
 
 ---
 
-### Ask a question
-```bash
-curl -X POST http://localhost:5000/ask \
-  -H "Content-Type: application/json" \
-  -d '{ "question": "What is asphalt made of?" }'
-```
-Expected (example):
-```json
-{
-  "question": "What is asphalt made of?",
-  "answer": "Asphalt is made of bitumen and aggregates [1]. It is used mainly for road construction and provides flexibility and durability [1].",
-  "sources": [
-    {
-      "rank": 1,
-      "score": 0.91,
-      "source": "Asphalt.pdf",
-      "type": "pdf",
-      "page": 1,
-      "project": "Chantier A"
-    }
-  ]
-}
-```
+### Ce qu'il faut observer
 
-If nothing relevant is found, the model replies:
-```json
-{
-  "answer": "I don't have enough information in the provided documents.",
-  "sources": []
-}
-```
-
----
-
-### Clear the index
-```bash
-curl -X POST http://localhost:5000/clear
-```
-Expected:
-```json
-{ "message": "Index cleared." }
-```
-> ⚠️ This wipes everything from Pinecone. Use with care.
-
----
-
-## What to Expect
-
-| Scenario | What happens |
+| Action | Résultat attendu |
 |---|---|
-| Question matches a document | Answer with `[1]`, `[2]` citations + source tags |
-| Question is off-topic | `"I don't have enough information in the provided documents."` |
-| Same PDF page retrieved multiple times | Deduplicated — shown only once in source tags |
-| PDF has multiple pages | Each page is chunked and indexed separately |
-| Large PDF (50+ pages) | Works — embeddings are batched internally in groups of 96 |
-| Multilingual question | The model replies in the same language as the question |
+| Importez un PDF | Statut **INDEXÉ** dans l'onglet Documents |
+| Posez une question sur le PDF | Réponse avec citation `[1]` et étiquette bleue de la source |
+| Même page citée deux fois | Une seule étiquette source affichée (déduplication) |
+| Question hors sujet | *"Je n'ai pas suffisamment d'informations..."* |
+| Question en français | Réponse en français |
+| Question en anglais | Réponse en anglais |
 
 ---
 
-## How It Works
+## Comment ça fonctionne
 
 ```
-User question
-     │
-     ▼
-embed_query()          — converts the question to a 1024-dim vector
-     │
-     ▼
-vectorstore.query()    — finds the top 5 most similar chunks in Pinecone (MIN_SCORE ≥ 0.5)
-     │
-     ▼
-llm.answer()           — sends chunks as context to LLaMA 3 via Groq
-     │
-     ▼
-source filtering       — only sources cited as [1][2]… by the model are returned
-     │
-     ▼
-JSON response          — answer + deduplicated sources
+Question de l'utilisateur
+          │
+          ▼
+embed_query()        — convertit la question en vecteur de 1024 dimensions
+          │
+          ▼
+vectorstore.query()  — trouve les 5 chunks les plus similaires dans Pinecone (score ≥ 0.5)
+          │
+          ▼
+llm.answer()         — envoie les chunks comme contexte à LLaMA 3 via Groq
+          │
+          ▼
+filtrage sources     — ne retourne que les sources citées [1][2]… dans la réponse
+          │
+          ▼
+réponse JSON         — réponse + sources dédupliquées
 ```
 
-Chunking uses a sliding window: each chunk is up to 500 characters, with 100 characters of overlap carried into the next chunk so context isn't lost at boundaries.
+Le découpage utilise une fenêtre glissante : chaque chunk fait au maximum 500 caractères, avec 100 caractères de chevauchement pour ne pas perdre le contexte aux frontières entre chunks.
 
 ---
 
-## Configuration Reference
+## Référence de configuration
 
-| Variable | Default | Description |
+| Variable | Défaut | Description |
 |---|---|---|
-| `GROQ_MODEL` | `llama-3.1-8b-instant` | Swap to `llama-3.3-70b-versatile` for better quality |
-| `TOP_K` | `5` | How many chunks to retrieve per question |
-| `MIN_SCORE` | `0.5` | Minimum cosine similarity to include a chunk |
-| `CHUNK_SIZE` | `500` | Max characters per chunk |
-| `CHUNK_OVERLAP` | `100` | Characters of overlap between consecutive chunks |
-| `EMBEDDING_MODEL` | `multilingual-e5-large` | Pinecone-hosted model, supports French + Arabic + English |
+| `GROQ_MODEL` | `llama-3.1-8b-instant` | Remplacer par `llama-3.3-70b-versatile` pour plus de qualité |
+| `TOP_K` | `5` | Nombre de chunks récupérés par question |
+| `MIN_SCORE` | `0.5` | Score de similarité cosinus minimum pour inclure un chunk |
+| `CHUNK_SIZE` | `500` | Taille maximale d'un chunk en caractères |
+| `CHUNK_OVERLAP` | `100` | Chevauchement entre chunks consécutifs |
+| `EMBEDDING_MODEL` | `multilingual-e5-large` | Supporte le français, l'arabe et l'anglais |
 
 ---
 
 ## Notes
 
-- The model is instructed to use **only** the provided documents. It will not answer from general knowledge.
-- The dashboard stats (document count, question count, latency) are session-only — they reset on page reload.
-- The Pinecone free tier supports one index with up to 100k vectors, which is enough for hundreds of PDFs.
-"# AI-System-for-Construction-Data-BTP-Project" 
+- Le modèle utilise **uniquement** les documents fournis. Il ne répond pas depuis ses connaissances générales.
+- Les statistiques du dashboard sont liées à la session et se réinitialisent au rechargement de la page.
+- Le tier gratuit Pinecone supporte jusqu'à 100 000 vecteurs, soit plusieurs centaines de PDFs.
