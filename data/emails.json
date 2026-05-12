@@ -1,0 +1,17 @@
+[
+  {
+    "subject": "Project delay update",
+    "from": "client@btp.com",
+    "date": "2026-05-01",
+    "body": "The project deadline has been extended to June due to material delays.",
+    "project": "Chantier A",
+    "lot": "Gros Oeuvre",
+    "criticite": "Haute"
+  },
+  {
+    "subject": "Budget confirmation",
+    "from": "manager@btp.com",
+    "date": "2026-04-20",
+    "body": "The total budget for the project is 2 million MAD."
+  }
+]

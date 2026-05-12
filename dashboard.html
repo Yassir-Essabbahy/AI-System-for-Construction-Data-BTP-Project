@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BTP AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; background: #f4f5f7; color: #172b4d; height: 100vh; display: flex; overflow: hidden; }
+
+.sidebar { width: 220px; background: #0052cc; display: flex; flex-direction: column; padding: 0; flex-shrink: 0; }
+.sidebar-logo { padding: 20px 16px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.12); }
+.sidebar-logo-icon { width: 32px; height: 32px; background: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.sidebar-logo-text { color: #fff; font-size: 15px; font-weight: 600; }
+.sidebar-logo-text span { color: #4fc3f7; }
+.sidebar-nav { padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.nav-btn { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.75); border: none; background: none; width: 100%; text-align: left; transition: all 0.15s; }
+.nav-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.nav-btn.active { background: rgba(255,255,255,0.18); color: #fff; }
+.nav-btn i { font-size: 16px; }
+.sidebar-footer { padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.12); }
+.conn-badge { display: flex; align-items: center; gap: 6px; font-size: 11px; color: rgba(255,255,255,0.6); }
+.conn-dot { width: 7px; height: 7px; border-radius: 50%; background: #4caf50; flex-shrink: 0; }
+
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.topbar { background: #fff; border-bottom: 1px solid #dfe1e6; padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.topbar-title { font-size: 15px; font-weight: 600; color: #172b4d; }
+.topbar-right { display: flex; align-items: center; gap: 8px; }
+.chip { background: #f4f5f7; border: 1px solid #dfe1e6; border-radius: 4px; padding: 4px 10px; font-size: 11px; color: #5e6c84; }
+.chip.online { color: #0a7955; background: #e3fcef; border-color: #abf5d1; }
+
+.content { flex: 1; overflow-y: auto; padding: 24px; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+.chat-wrap { display: grid; grid-template-columns: 1fr 260px; gap: 16px; height: calc(100vh - 56px - 48px); }
+.chat-card { background: #fff; border: 1px solid #dfe1e6; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
+.chat-header { padding: 12px 16px; border-bottom: 1px solid #dfe1e6; font-size: 11px; font-weight: 600; color: #5e6c84; letter-spacing: 0.5px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+.chat-msgs { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.msg { display: flex; gap: 10px; }
+.msg.user { flex-direction: row-reverse; }
+.avatar { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
+.msg.ai .avatar { background: #deebff; color: #0052cc; }
+.msg.user .avatar { background: #e3fcef; color: #0a7955; }
+.bubble { max-width: 72%; padding: 10px 14px; border-radius: 8px; font-size: 13px; line-height: 1.6; }
+.msg.ai .bubble { background: #f4f5f7; color: #172b4d; }
+.msg.user .bubble { background: #0052cc; color: #fff; }
+.sources { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; padding-left: 38px; }
+.src-tag { background: #deebff; color: #0747a6; font-size: 10px; padding: 2px 8px; border-radius: 3px; font-weight: 500; display: flex; align-items: center; gap: 4px; }
+.msg-time { font-size: 10px; color: #8993a4; margin-top: 3px; padding: 0 2px; }
+.chat-input-row { padding: 12px 16px; border-top: 1px solid #dfe1e6; display: flex; gap: 8px; align-items: flex-end; }
+.chat-input { flex: 1; border: 1px solid #dfe1e6; border-radius: 6px; padding: 9px 12px; font-family: 'Inter', sans-serif; font-size: 13px; color: #172b4d; outline: none; resize: none; height: 38px; background: #f4f5f7; transition: border-color 0.15s, background 0.15s; }
+.chat-input:focus { border-color: #4c9aff; background: #fff; }
+.send-btn { background: #0052cc; color: #fff; border: none; border-radius: 6px; padding: 9px 16px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; height: 38px; transition: background 0.15s; }
+.send-btn:hover { background: #0065ff; }
+.send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.side-panel { background: #fff; border: 1px solid #dfe1e6; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
+.side-section { padding: 14px 16px; border-bottom: 1px solid #dfe1e6; }
+.side-section:last-child { border-bottom: none; }
+.side-label { font-size: 10px; font-weight: 600; color: #8993a4; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+.quick-btn { display: block; width: 100%; text-align: left; padding: 8px 10px; background: #f4f5f7; border: none; border-radius: 6px; font-family: 'Inter', sans-serif; font-size: 12px; color: #172b4d; cursor: pointer; margin-bottom: 6px; transition: background 0.15s; line-height: 1.4; }
+.quick-btn:last-child { margin-bottom: 0; }
+.quick-btn:hover { background: #deebff; color: #0052cc; }
+.session-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: #5e6c84; margin-bottom: 10px; }
+.session-val { font-weight: 600; color: #172b4d; }
+.clear-btn { width: 100%; padding: 8px; background: none; border: 1px solid #dfe1e6; border-radius: 6px; font-family: 'Inter', sans-serif; font-size: 12px; color: #5e6c84; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.15s; }
+.clear-btn:hover { border-color: #ff5630; color: #ff5630; background: #ffebe6; }
+
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 8px; color: #8993a4; font-size: 13px; text-align: center; padding: 32px; }
+.empty-icon { font-size: 36px; margin-bottom: 4px; }
+
+.typing-dots { display: flex; gap: 4px; align-items: center; padding: 4px 0; }
+.typing-dots span { width: 6px; height: 6px; background: #8993a4; border-radius: 50%; animation: blink 1.2s infinite; }
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink { 0%,80%,100%{opacity:.2;transform:scale(.8)} 40%{opacity:1;transform:scale(1)} }
+
+.upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.upload-zone { background: #fff; border: 2px dashed #dfe1e6; border-radius: 8px; padding: 40px 24px; text-align: center; cursor: pointer; transition: all 0.15s; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.upload-zone:hover, .upload-zone.drag { border-color: #4c9aff; background: #f0f7ff; }
+.upload-zone-icon { font-size: 32px; color: #4c9aff; }
+.upload-zone h3 { font-size: 14px; font-weight: 600; color: #172b4d; }
+.upload-zone p { font-size: 12px; color: #8993a4; line-height: 1.5; }
+.upload-btn { background: #0052cc; color: #fff; border: none; border-radius: 6px; padding: 8px 16px; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500; cursor: pointer; margin-top: 4px; }
+.upload-btn:hover { background: #0065ff; }
+.file-list-card { background: #fff; border: 1px solid #dfe1e6; border-radius: 8px; overflow: hidden; }
+.file-list-header { padding: 12px 16px; border-bottom: 1px solid #dfe1e6; font-size: 11px; font-weight: 600; color: #8993a4; text-transform: uppercase; letter-spacing: 0.5px; }
+.file-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #f4f5f7; transition: background 0.15s; }
+.file-row:last-child { border-bottom: none; }
+.file-row:hover { background: #f4f5f7; }
+.file-icon-box { width: 32px; height: 32px; background: #fff0e5; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #d04e00; flex-shrink: 0; }
+.file-info { flex: 1; min-width: 0; }
+.file-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.file-meta { font-size: 11px; color: #8993a4; margin-top: 1px; }
+.status-pill { font-size: 10px; padding: 2px 8px; border-radius: 3px; font-weight: 600; }
+.status-pill.ok { background: #e3fcef; color: #0a7955; }
+.status-pill.pending { background: #fff7d6; color: #974f0c; }
+.status-pill.err { background: #ffebe6; color: #bf2600; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+.stat-card { background: #fff; border: 1px solid #dfe1e6; border-radius: 8px; padding: 18px 16px; }
+.stat-label { font-size: 11px; color: #8993a4; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.stat-val { font-size: 26px; font-weight: 600; color: #0052cc; }
+.stat-sub { font-size: 11px; color: #8993a4; margin-top: 4px; }
+.log-card { background: #fff; border: 1px solid #dfe1e6; border-radius: 8px; overflow: hidden; }
+.log-header { padding: 12px 16px; border-bottom: 1px solid #dfe1e6; font-size: 11px; font-weight: 600; color: #8993a4; text-transform: uppercase; letter-spacing: 0.5px; }
+.log-body { padding: 12px 16px; font-family: 'SF Mono', monospace; font-size: 11px; color: #5e6c84; max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.log-ok { color: #0a7955; }
+.log-err { color: #bf2600; }
+.log-ask { color: #0052cc; }
+
+.settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.settings-card { background: #fff; border: 1px solid #dfe1e6; border-radius: 8px; padding: 20px; }
+.settings-title { font-size: 13px; font-weight: 600; color: #172b4d; margin-bottom: 18px; }
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 11px; font-weight: 600; color: #5e6c84; margin-bottom: 5px; }
+.field input, .field select { width: 100%; border: 1px solid #dfe1e6; border-radius: 6px; padding: 8px 10px; font-family: 'Inter', sans-serif; font-size: 13px; color: #172b4d; background: #f4f5f7; outline: none; transition: border-color 0.15s, background 0.15s; }
+.field input:focus, .field select:focus { border-color: #4c9aff; background: #fff; }
+.save-btn { width: 100%; padding: 10px; background: #0052cc; color: #fff; border: none; border-radius: 6px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.15s; }
+.save-btn:hover { background: #0065ff; }
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f4f5f7; font-size: 13px; color: #172b4d; }
+.toggle-row:last-of-type { border-bottom: none; }
+.toggle { width: 34px; height: 18px; background: #dfe1e6; border-radius: 9px; position: relative; cursor: pointer; transition: background 0.2s; }
+.toggle.on { background: #0052cc; }
+.toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 12px; height: 12px; background: #fff; border-radius: 50%; transition: transform 0.2s; }
+.toggle.on::after { transform: translateX(16px); }
+
+.toast-wrap { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 99; }
+.toast { background: #fff; border: 1px solid #dfe1e6; border-radius: 8px; padding: 12px 16px; font-size: 13px; display: flex; align-items: center; gap: 10px; min-width: 260px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); animation: slideIn 0.25s ease; }
+.toast.success { border-left: 3px solid #36b37e; }
+.toast.error { border-left: 3px solid #ff5630; }
+@keyframes slideIn { from{opacity:0;transform:translateX(12px)} to{opacity:1;transform:translateX(0)} }
+
+.prog-wrap { margin-top: 14px; background: #fff; border: 1px solid #dfe1e6; border-radius: 8px; padding: 14px; display: none; }
+.prog-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; color: #5e6c84; }
+.prog-track { background: #f4f5f7; border-radius: 4px; height: 4px; overflow: hidden; }
+.prog-bar { height: 100%; background: #0052cc; border-radius: 4px; transition: width 0.3s; }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">🏗️</div>
+    <div class="sidebar-logo-text">BTP<span>AI</span></div>
+  </div>
+  <nav class="sidebar-nav">
+    <button class="nav-btn active" onclick="showPanel('chat',this)"><i class="ti ti-message-2"></i> Chat</button>
+    <button class="nav-btn" onclick="showPanel('upload',this)"><i class="ti ti-file-upload"></i> Documents</button>
+    <button class="nav-btn" onclick="showPanel('stats',this)"><i class="ti ti-chart-bar"></i> Tableau de bord</button>
+    <button class="nav-btn" onclick="showPanel('settings',this)"><i class="ti ti-settings"></i> Paramètres</button>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="conn-badge"><span class="conn-dot"></span> API connectée</div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:4px;">Flask · Pinecone · Groq</div>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-title">Système IA BTP</div>
+    <div class="topbar-right">
+      <span class="chip" id="api-display">127.0.0.1:5000</span>
+      <span class="chip" id="model-tag">llama-3.1-8b</span>
+      <span class="chip online" id="conn-status">● En ligne</span>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <div class="panel active" id="panel-chat">
+      <div class="chat-wrap">
+        <div class="chat-card">
+          <div class="chat-header"><span class="conn-dot"></span> Assistant BTP — RAG pipeline actif</div>
+          <div class="chat-msgs" id="chat-msgs">
+            <div class="empty-state">
+              <div class="empty-icon">🏗️</div>
+              <strong style="color:#172b4d;">Assistant BTP prêt</strong>
+              <span>Posez une question sur vos documents ou chargez un PDF pour commencer.</span>
+            </div>
+          </div>
+          <div class="chat-input-row">
+            <textarea class="chat-input" id="chat-input" placeholder="Ex : De quoi est composé l'asphalte ?" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendQ();}"></textarea>
+            <button class="send-btn" id="send-btn" onclick="sendQ()"><i class="ti ti-send"></i> Envoyer</button>
+          </div>
+        </div>
+
+        <div class="side-panel">
+          <div class="side-section">
+            <div class="side-label">Questions suggérées</div>
+            <button class="quick-btn" onclick="setQ('Quels matériaux sont utilisés dans la construction routière ?')">Quels matériaux sont utilisés dans la construction routière ?</button>
+            <button class="quick-btn" onclick="setQ('Quelles sont les normes DTU pour le béton ?')">Quelles sont les normes DTU pour le béton ?</button>
+            <button class="quick-btn" onclick="setQ('Qu\'est-ce que le bitume et comment est-il utilisé ?')">Qu'est-ce que le bitume et comment est-il utilisé ?</button>
+            <button class="quick-btn" onclick="setQ('Quelles sont les propriétés de l\'asphalte ?')">Quelles sont les propriétés de l'asphalte ?</button>
+            <button class="quick-btn" onclick="setQ('Quelles normes de sécurité s\'appliquent sur les chantiers ?')">Quelles normes de sécurité s'appliquent sur les chantiers ?</button>
+          </div>
+          <div class="side-section">
+            <div class="side-label">Session</div>
+            <div class="session-row">Messages <span class="session-val" id="msg-count">0</span></div>
+            <button class="clear-btn" onclick="clearChat()"><i class="ti ti-trash"></i> Effacer le chat</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-upload">
+      <div class="upload-grid">
+        <div>
+          <div class="upload-zone" id="drop-zone"
+            onclick="document.getElementById('file-input').click()"
+            ondragover="event.preventDefault();this.classList.add('drag')"
+            ondragleave="this.classList.remove('drag')"
+            ondrop="handleDrop(event)">
+            <i class="ti ti-cloud-upload upload-zone-icon"></i>
+            <h3>Déposer vos PDFs ici</h3>
+            <p>Glisser-déposer ou cliquer<br>Formats: PDF · Max 50MB</p>
+            <button class="upload-btn" onclick="event.stopPropagation();document.getElementById('file-input').click()">Choisir un fichier</button>
+          </div>
+          <input type="file" id="file-input" accept=".pdf" multiple style="display:none" onchange="handleFiles(this.files)">
+          <div class="prog-wrap" id="prog-wrap">
+            <div class="prog-row"><span id="prog-name">Chargement...</span><span id="prog-pct">0%</span></div>
+            <div class="prog-track"><div class="prog-bar" id="prog-bar" style="width:0%"></div></div>
+          </div>
+        </div>
+        <div class="file-list-card">
+          <div class="file-list-header">Documents indexés</div>
+          <div id="file-list">
+            <div class="empty-state" style="padding:40px;"><div style="font-size:28px;">📂</div>Aucun document uploadé</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-stats">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Documents</div><div class="stat-val" id="s-docs">0</div><div class="stat-sub">indexés dans Pinecone</div></div>
+        <div class="stat-card"><div class="stat-label">Questions</div><div class="stat-val" id="s-q">0</div><div class="stat-sub">cette session</div></div>
+        <div class="stat-card"><div class="stat-label">Succès</div><div class="stat-val" id="s-ok">—</div><div class="stat-sub">réponses valides</div></div>
+        <div class="stat-card"><div class="stat-label">Latence</div><div class="stat-val" id="s-lat">—</div><div class="stat-sub">ms en moyenne</div></div>
+      </div>
+      <div class="log-card">
+        <div class="log-header">Journal d'activité</div>
+        <div class="log-body" id="log">
+          <span class="log-ok">[SYSTÈME] BTP AI initialisé</span>
+          <span>[INFO] Connexion à Flask sur http://127.0.0.1:5000</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-settings">
+      <div class="settings-grid">
+        <div class="settings-card">
+          <div class="settings-title">Connexion API</div>
+          <div class="field"><label>URL Backend Flask</label><input type="text" id="api-url" value="http://127.0.0.1:5000"></div>
+          <div class="field"><label>Index Pinecone</label><input type="text" id="idx-name" value="btp-ai"></div>
+          <div class="field"><label>Modèle LLM</label>
+            <select id="model-sel">
+              <option>llama-3.1-8b-instant</option>
+              <option>llama-3.3-70b-versatile</option>
+              <option>mixtral-8x7b-32768</option>
+            </select>
+          </div>
+          <button class="save-btn" onclick="saveSettings()">Sauvegarder</button>
+        </div>
+        <div class="settings-card">
+          <div class="settings-title">Paramètres RAG</div>
+          <div class="toggle-row">Mode strict (contexte uniquement)<div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+          <div class="toggle-row">Réponses structurées<div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+          <div class="toggle-row">Journal d'activité<div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+          <div class="toggle-row">Suggestions automatiques<div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+          <div class="field" style="margin-top:18px;"><label>Chunks récupérés (k)</label><input type="number" value="4" min="1" max="10"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+let API_URL = 'http://127.0.0.1:5000';
+let stats = { docs: 0, q: 0, ok: 0, lats: [] };
+let msgCount = 0;
+
+function showPanel(name, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  el.classList.add('active');
+}
+
+function setQ(q) { document.getElementById('chat-input').value = q; document.getElementById('chat-input').focus(); }
+
+function clearChat() {
+  document.getElementById('chat-msgs').innerHTML = '<div class="empty-state"><div class="empty-icon">🏗️</div><strong style="color:#172b4d;">Assistant BTP prêt</strong><span>Posez une question sur vos documents ou chargez un PDF pour commencer.</span></div>';
+  msgCount = 0;
+  document.getElementById('msg-count').textContent = '0';
+}
+
+function addMsg(role, text, sources = []) {
+  const msgs = document.getElementById('chat-msgs');
+  const empty = msgs.querySelector('.empty-state');
+  if (empty) empty.remove();
+  const time = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  let sourcesHtml = '';
+  if (role === 'ai' && sources && sources.length > 0) {
+    const seen = new Set();
+    const tags = sources.filter(s => {
+      // deduplicate by filename + page — show each source only once
+      const key = s.source + (s.page ?? '');
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).map(s => {
+      const name = s.source.split('/').pop();
+      const page = (s.page !== null && s.page !== undefined) ? ' · p.' + (s.page) : '';
+      const proj = s.project ? ' · ' + s.project : '';
+      const lot = s.lot ? ' · ' + s.lot : '';
+      const crit = s.criticite ? ' · ' + s.criticite : '';
+      return '<span class="src-tag"><i class="ti ti-file" style="font-size:10px"></i>' + name + page + proj + lot + crit + '</span>';
+    }).join('');
+    if (tags) sourcesHtml = '<div class="sources">' + tags + '</div>';
+  }
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  const initials = role === 'ai' ? 'AI' : 'YO';
+  div.innerHTML = '<div class="avatar">' + initials + '</div><div><div class="bubble">' + text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>') + '</div>' + sourcesHtml + '<div class="msg-time">' + time + '</div></div>';
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  msgCount++;
+  document.getElementById('msg-count').textContent = msgCount;
+}
+
+function addTyping() {
+  const msgs = document.getElementById('chat-msgs');
+  const div = document.createElement('div');
+  div.className = 'msg ai'; div.id = 'typing';
+  div.innerHTML = '<div class="avatar">AI</div><div><div class="bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div></div>';
+  msgs.appendChild(div); msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() { const t = document.getElementById('typing'); if (t) t.remove(); }
+
+async function sendQ() {
+  const inp = document.getElementById('chat-input');
+  const btn = document.getElementById('send-btn');
+  const q = inp.value.trim();
+  if (!q) return;
+  inp.value = ''; btn.disabled = true;
+  addMsg('user', q); addTyping();
+  addLog('[ASK] ' + q.substring(0,60));
+  const t0 = Date.now();
+  try {
+    const res = await fetch(API_URL + '/ask', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({question: q}) });
+    const data = await res.json();
+    const lat = Date.now() - t0;
+    removeTyping();
+    addMsg('ai', data.answer || 'Aucune réponse.', data.sources || []);
+    stats.q++; stats.ok++; stats.lats.push(lat);
+    updateStats(); addLog('[OK] Réponse en ' + lat + 'ms');
+  } catch(e) {
+    removeTyping();
+    addMsg('ai', '⚠️ Erreur de connexion. Vérifiez que Flask est démarré.');
+    addLog('[ERROR] ' + e.message); stats.q++; updateStats(); toast('Erreur de connexion','error');
+  }
+  btn.disabled = false;
+}
+
+function handleDrop(e) { e.preventDefault(); document.getElementById('drop-zone').classList.remove('drag'); handleFiles(e.dataTransfer.files); }
+async function handleFiles(files) { for (const f of files) { if (!f.name.endsWith('.pdf')) { toast(f.name + " n'est pas un PDF",'error'); continue; } await uploadFile(f); } }
+
+async function uploadFile(file) {
+  const wrap = document.getElementById('prog-wrap');
+  const bar = document.getElementById('prog-bar');
+  const pct = document.getElementById('prog-pct');
+  const name = document.getElementById('prog-name');
+  wrap.style.display = 'block'; name.textContent = file.name;
+  let p = 0;
+  const iv = setInterval(() => { p = Math.min(p + Math.random()*15, 85); bar.style.width = p+'%'; pct.textContent = Math.round(p)+'%'; }, 200);
+  addFileToList(file.name, 'pending');
+  addLog('[UPLOAD] ' + file.name);
+  try {
+    const fd = new FormData(); fd.append('file', file);
+    const res = await fetch(API_URL + '/upload', { method:'POST', body: fd });
+    clearInterval(iv); bar.style.width='100%'; pct.textContent='100%';
+    if (res.ok) { updateFileStatus(file.name,'ok'); stats.docs++; updateStats(); toast(file.name + ' indexé!','success'); addLog('[OK] ' + file.name + ' indexé'); }
+    else { updateFileStatus(file.name,'err'); toast('Erreur : ' + file.name,'error'); addLog('[ERREUR] Échec de l\'envoi'); }
+  } catch(e) { clearInterval(iv); updateFileStatus(file.name,'err'); toast('Erreur de connexion','error'); addLog('[ERROR] ' + e.message); }
+  setTimeout(() => { wrap.style.display='none'; bar.style.width='0%'; }, 1500);
+}
+
+function addFileToList(name, status) {
+  const list = document.getElementById('file-list');
+  const empty = list.querySelector('.empty-state'); if (empty) empty.remove();
+  const div = document.createElement('div'); div.className = 'file-row'; div.id = 'f-' + name.replace(/\./g,'-');
+  div.innerHTML = '<div class="file-icon-box"><i class="ti ti-file-type-pdf" style="font-size:16px"></i></div><div class="file-info"><div class="file-name">' + name + '</div><div class="file-meta">' + new Date().toLocaleDateString('fr-FR') + ' · PDF</div></div><span class="status-pill pending" id="st-' + name.replace(/\./g,'-') + '">EN COURS</span>';
+  list.appendChild(div);
+}
+
+function updateFileStatus(name, status) {
+  const el = document.getElementById('st-' + name.replace(/\./g,'-')); if (!el) return;
+  el.className = 'status-pill ' + status;
+  el.textContent = status==='ok'?'INDEXÉ':status==='err'?'ERREUR':'EN COURS';
+}
+
+function updateStats() {
+  document.getElementById('s-docs').textContent = stats.docs;
+  document.getElementById('s-q').textContent = stats.q;
+  if (stats.q>0) document.getElementById('s-ok').textContent = Math.round(stats.ok/stats.q*100)+'%';
+  if (stats.lats.length>0) document.getElementById('s-lat').textContent = Math.round(stats.lats.reduce((a,b)=>a+b,0)/stats.lats.length);
+}
+
+function addLog(msg) {
+  const log = document.getElementById('log');
+  const time = new Date().toLocaleTimeString('fr-FR');
+  const span = document.createElement('span');
+  span.className = msg.startsWith('[OK]')?'log-ok':msg.startsWith('[ERROR]')?'log-err':msg.startsWith('[ASK]')?'log-ask':'';
+  span.textContent = time + ' ' + msg;
+  log.appendChild(span); log.scrollTop = log.scrollHeight;
+}
+
+function toast(msg, type) {
+  type = type || 'success';
+  const wrap = document.getElementById('toasts');
+  const div = document.createElement('div'); div.className = 'toast ' + type;
+  div.innerHTML = '<i class="ti ti-' + (type==='success'?'check':'alert-triangle') + '" style="color:' + (type==='success'?'#0a7955':'#bf2600') + '"></i> ' + msg;
+  wrap.appendChild(div); setTimeout(()=>div.remove(),3500);
+}
+
+function saveSettings() {
+  API_URL = document.getElementById('api-url').value.trim();
+  document.getElementById('api-display').textContent = API_URL.replace('http://','').replace('https://','');
+  document.getElementById('model-tag').textContent = document.getElementById('model-sel').value;
+  toast('Paramètres sauvegardés !','success'); addLog('[CONFIG] Paramètres mis à jour');
+}
+
+async function checkConn() {
+  try {
+    await fetch(API_URL + '/health', { signal: AbortSignal.timeout(3000) });
+    const s = document.getElementById('conn-status');
+    s.textContent = '● En ligne'; s.style.color = '#0a7955'; s.style.background = '#e3fcef';
+  } catch {
+    const s = document.getElementById('conn-status');
+    s.textContent = '● Hors ligne'; s.style.color = '#bf2600'; s.style.background = '#ffebe6';
+  }
+}
+checkConn(); setInterval(checkConn, 30000);
+</script>
+</body>
+</html>

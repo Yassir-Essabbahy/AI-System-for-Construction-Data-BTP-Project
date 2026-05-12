@@ -1,0 +1,3 @@
+Concrete is a mixture of cement, sand, gravel and water.
+Curing time is usually 7 to 28 days.
+Steel reinforcement is used to increase tensile strength.
