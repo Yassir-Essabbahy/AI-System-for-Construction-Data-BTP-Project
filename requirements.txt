@@ -1,6 +1,7 @@
-flask>=3.0,<4.0
-flask-cors>=4.0,<6.0
-pinecone>=5.0,<7.0
-groq>=0.11,<1.0
-pypdf>=4.0,<6.0
-python-dotenv>=1.0,<2.0
+flask
+flask-cors
+pinecone
+groq
+pypdf
+python-dotenv
+gunicorn

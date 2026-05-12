@@ -3,7 +3,6 @@ from config import GROQ_API_KEY, GROQ_MODEL
 
 _client = Groq(api_key=GROQ_API_KEY)
 
-# the exact string the model is told to return when it has no answer
 _NO_INFO_MARKER = "i don't have enough information in the provided documents"
 
 SYSTEM_PROMPT = (
@@ -50,13 +49,11 @@ def answer(question, matches):
 
     text = completion.choices[0].message.content.strip()
 
-    # check against the exact marker we gave the model — no guessing
     no_info = _NO_INFO_MARKER in text.lower()
 
     sources = []
     if not no_info:
         for i, m in enumerate(matches):
-            # only include a source if the model actually cited it as [1], [2], etc.
             citation = f"[{i + 1}]"
             if citation not in text:
                 continue

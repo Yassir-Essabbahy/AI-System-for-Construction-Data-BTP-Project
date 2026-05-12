@@ -13,14 +13,11 @@ def chunk_text(text, chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP):
         else:
             if buffer:
                 chunks.append(buffer)
-                # carry the tail of the current buffer into the next chunk
-                # so context isn't lost at boundaries
                 tail = buffer[-overlap:] if overlap else ""
             else:
                 tail = ""
 
             if len(p) > chunk_size:
-                # paragraph is too long on its own — split it with stride
                 stride = max(1, chunk_size - overlap)
                 chunks += [p[i:i + chunk_size] for i in range(0, len(p), stride)]
                 buffer = ""

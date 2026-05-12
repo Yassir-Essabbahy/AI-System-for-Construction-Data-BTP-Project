@@ -23,7 +23,6 @@ def ingest_pdf(file_or_path, metadata):
 def ingest_emails(emails):
     total = 0
     for email in emails:
-        # use "or ''" so None values from some mail clients don't break things
         subject = email.get("subject") or ""
         body    = email.get("body") or ""
         text    = f"{subject}\n\n{body}".strip()

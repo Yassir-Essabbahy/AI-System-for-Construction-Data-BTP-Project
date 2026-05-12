@@ -19,5 +19,5 @@ EMBEDDING_DIM      = 1024
 GROQ_MODEL         = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
 CHUNK_SIZE         = int(os.getenv("CHUNK_SIZE", "500"))
 CHUNK_OVERLAP      = int(os.getenv("CHUNK_OVERLAP", "100"))
-TOP_K              = int(os.getenv("TOP_K", "5"))       # was 2, too low — raised to 5
-MIN_SCORE          = float(os.getenv("MIN_SCORE", "0.5"))  # moved out of vectorstore so it's easy to tune
+TOP_K              = int(os.getenv("TOP_K", "5"))
+MIN_SCORE          = float(os.getenv("MIN_SCORE", "0.5"))
