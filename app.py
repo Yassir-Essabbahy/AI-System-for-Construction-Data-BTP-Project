@@ -1,19 +1,18 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from config import TOP_K
 from vectorstore import ensure_index, query, clear
 from embeddings import embed_query
 from llm import answer
 from ingest import ingest_text, ingest_pdf, ingest_emails
-from flask import Flask, request, jsonify, send_from_directory
-
-@app.get("/")
-def index():
-    return send_from_directory(".", "dashboard.html")
 
 app = Flask(__name__)
 CORS(app)
 ensure_index()
+
+@app.get("/")
+def index():
+    return send_from_directory(".", "dashboard.html")
 
 @app.get("/health")
 def health():
