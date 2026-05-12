@@ -54,7 +54,7 @@ def answer(question, matches):
     sources = []
     if not no_info:
         for i, m in enumerate(matches):
-            citation = f"[{i + 1}]"
+            citation = f"[{i + 1}"
             if citation not in text:
                 continue
             meta = m["metadata"]
