@@ -3,8 +3,8 @@ from flask_cors import CORS
 from config import TOP_K
 from vectorstore import ensure_index, query, clear
 from embeddings import embed_query
-from llm import answer, multi_query_retrieve, answer_with_context, analyze_compliance
-from ingest import ingest_text, ingest_pdf, ingest_emails
+from llm import answer, multi_query_retrieve, answer_with_context, analyze_compliance, clear_memory
+from ingest import ingest_text, ingest_pdf, ingest_docx, ingest_txt, ingest_emails
 
 app = Flask(__name__)
 CORS(app)
@@ -16,7 +16,7 @@ def index():
 
 @app.get("/health")
 def health():
-    return jsonify({"status": "ok", "service": "Système IA BTP", "version": "1.1.0"})
+    return jsonify({"status": "ok", "service": "Système IA BTP", "version": "1.2.0"})
 
 # ── QUERY ──────────────────────────────────────────────────────────────────────
 
@@ -40,16 +40,33 @@ def upload():
     if "file" not in request.files:
         return jsonify({"error": "No file uploaded (expected field 'file')."}), 400
     f = request.files["file"]
-    if not f.filename.lower().endswith(".pdf"):
-        return jsonify({"error": "Only PDF files are supported."}), 400
+    fname = f.filename.lower()
+
+    if not fname.endswith((".pdf", ".docx", ".txt")):
+        return jsonify({"error": "Only PDF, DOCX, and TXT files are supported."}), 400
+
     metadata = {
-        "source": f.filename, "type": "pdf",
-        "project": request.form.get("project", ""),
-        "lot": request.form.get("lot", ""),
+        "source":   f.filename,
+        "project":  request.form.get("project", ""),
+        "lot":      request.form.get("lot", ""),
         "criticite": request.form.get("criticite", ""),
     }
+
     try:
-        return jsonify({"message": "PDF ingested.", **ingest_pdf(f.stream, metadata)})
+        if fname.endswith(".pdf"):
+            metadata["type"] = "pdf"
+            result = ingest_pdf(f.stream, metadata)
+            msg = "PDF ingested."
+        elif fname.endswith(".docx"):
+            metadata["type"] = "docx"
+            result = ingest_docx(f.stream, metadata)
+            msg = "DOCX ingested."
+        else:
+            metadata["type"] = "txt"
+            result = ingest_txt(f.stream, metadata)
+            msg = "TXT ingested."
+
+        return jsonify({"message": msg, **result})
     except Exception as e:
         app.logger.exception("upload failed")
         return jsonify({"error": str(e)}), 500
@@ -61,9 +78,10 @@ def ingest_text_route():
     if not text:
         return jsonify({"error": "Field 'text' is required."}), 400
     metadata = {
-        "source": data.get("source", "manual"), "type": "text",
-        "project": data.get("project", ""),
-        "lot": data.get("lot", ""),
+        "source":   data.get("source", "manual"),
+        "type":     "text",
+        "project":  data.get("project", ""),
+        "lot":      data.get("lot", ""),
         "criticite": data.get("criticite", ""),
     }
     try:
@@ -84,18 +102,17 @@ def ingest_emails_route():
         app.logger.exception("ingest-emails failed")
         return jsonify({"error": str(e)}), 500
 
+# ── MEMORY ─────────────────────────────────────────────────────────────────────
+
+@app.post("/clear-memory")
+def reset_memory():
+    clear_memory()
+    return jsonify({"message": "Memory cleared."})
+
 # ── COMPLIANCE ─────────────────────────────────────────────────────────────────
 
 @app.post("/analyze/compliance")
 def compliance():
-    """
-    Analyse un texte ou document BTP pour détecter les risques
-    réglementaires (DTU, NF, EN, ISO) et les risques chantier.
-
-    Body JSON:
-        text     (str, required) : texte à analyser
-        project  (str, optional) : nom du projet
-    """
     data = request.get_json(silent=True) or {}
     text = (data.get("text") or "").strip()
     if not text:
@@ -112,7 +129,6 @@ def compliance():
 
 @app.get("/stats")
 def stats():
-    """Retourne les statistiques de l'index vectoriel Pinecone."""
     try:
         from pinecone import Pinecone
         from config import PINECONE_API_KEY, PINECONE_INDEX
@@ -121,8 +137,8 @@ def stats():
         info = index.describe_index_stats()
         return jsonify({
             "total_vectors": info.total_vector_count,
-            "dimension": info.dimension,
-            "status": "healthy",
+            "dimension":     info.dimension,
+            "status":        "healthy",
         })
     except Exception as e:
         app.logger.exception("stats failed")

@@ -4,4 +4,5 @@ pinecone
 groq
 pypdf
 python-dotenv
+python-docx
 gunicorn

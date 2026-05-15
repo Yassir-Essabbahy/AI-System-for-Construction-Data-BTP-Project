@@ -1,6 +1,7 @@
 import re
 import json
 from groq import Groq
+from collections import deque
 from config import GROQ_API_KEY, GROQ_MODEL
 from vectorstore import query
 from embeddings import embed_query
@@ -27,12 +28,20 @@ _SOURCE_KEYS = {
     "email": ["source", "type", "sender", "date", "project", "lot", "criticite"],
     "pdf":   ["source", "type", "page", "project", "lot", "criticite"],
     "text":  ["source", "type", "project", "lot", "criticite"],
+    "docx":  ["source", "type", "page", "project", "lot", "criticite"],
+    "txt":   ["source", "type", "page", "project", "lot", "criticite"],
 }
 
-# ── MULTI-QUERY RETRIEVAL ──────────────────────────────────────────────────────
+# ── MEMORY ────────────────────────────────────────────────────────────────────
+_memory: deque = deque(maxlen=6)
+
+def clear_memory():
+    _memory.clear()
+
+
+# ── MULTI-QUERY RETRIEVAL ─────────────────────────────────────────────────────
 
 def _generate_query_variants(question: str) -> list[str]:
-    """Ask the LLM to rewrite the question 3 different ways."""
     prompt = (
         "Generate 3 different reformulations of this BTP construction question "
         "to improve document retrieval coverage.\n"
@@ -49,15 +58,10 @@ def _generate_query_variants(question: str) -> list[str]:
         lines = response.choices[0].message.content.strip().split("\n")
         return [l.strip() for l in lines if l.strip()][:3]
     except Exception:
-        return []  # graceful fallback — original question still used
+        return []
 
 
 def multi_query_retrieve(question: str, top_k: int = TOP_K) -> list[dict]:
-    """
-    Retrieves chunks using the original question + up to 3 LLM-generated variants.
-    Deduplicates by vector ID and sorts by score descending.
-    Returns at most top_k * 2 unique chunks.
-    """
     variants = _generate_query_variants(question)
     all_queries = [question] + variants
 
@@ -80,7 +84,7 @@ def multi_query_retrieve(question: str, top_k: int = TOP_K) -> list[dict]:
     return all_chunks[: top_k * 2]
 
 
-# ── ANSWER GENERATION ──────────────────────────────────────────────────────────
+# ── ANSWER GENERATION ─────────────────────────────────────────────────────────
 
 def _build_prompt(question: str, matches: list[dict]) -> str:
     if not matches:
@@ -101,21 +105,23 @@ def _build_prompt(question: str, matches: list[dict]) -> str:
 
 
 def answer_with_context(question: str, matches: list[dict]) -> dict:
-    """
-    Generates a grounded answer from retrieved chunks.
-    Returns answer text + cited sources + metadata about retrieval.
-    """
+    # system + memory history + new question
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    messages.extend(list(_memory))
+    messages.append({"role": "user", "content": _build_prompt(question, matches)})
+
     completion = _client.chat.completions.create(
         model=GROQ_MODEL,
         temperature=0.0,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user",   "content": _build_prompt(question, matches)},
-        ],
+        messages=messages,
     )
 
     text = completion.choices[0].message.content.strip()
     no_info = _NO_INFO_MARKER in text.lower()
+
+    # save turn to memory
+    _memory.append({"role": "user",      "content": question})
+    _memory.append({"role": "assistant", "content": text})
 
     sources = []
     if not no_info:
@@ -134,31 +140,22 @@ def answer_with_context(question: str, matches: list[dict]) -> dict:
             sources.append({"rank": i + 1, "score": m.get("score"), **filtered})
 
     return {
-        "answer": text,
-        "sources": sources,
+        "answer":           text,
+        "sources":          sources,
         "chunks_retrieved": len(matches),
-        "queries_used": 4,
+        "queries_used":     4,
     }
 
 
-# ── LEGACY WRAPPER (keeps backward compatibility) ──────────────────────────────
+# ── LEGACY WRAPPER ────────────────────────────────────────────────────────────
 
 def answer(question: str, matches: list[dict]) -> dict:
-    """
-    Backward-compatible wrapper — still used if /ask is called
-    with pre-fetched matches. Prefer answer_with_context().
-    """
     return answer_with_context(question, matches)
 
 
-# ── COMPLIANCE ANALYSIS ────────────────────────────────────────────────────────
+# ── COMPLIANCE ANALYSIS ───────────────────────────────────────────────────────
 
 def analyze_compliance(text: str, project: str = "Non spécifié") -> dict:
-    """
-    Analyses a BTP text for regulatory risks (DTU, NF/EN/ISO norms)
-    and site risks. Returns structured JSON with criticality level,
-    risks list, and recommended actions.
-    """
     prompt = f"""Tu es un expert BTP spécialisé en conformité réglementaire française.
 Analyse le texte suivant extrait d'un projet BTP et identifie :
 
@@ -200,9 +197,9 @@ Réponds UNIQUEMENT en JSON valide avec cette structure exacte, sans texte avant
         analysis = {"resume": raw, "criticite": "INCONNU"}
 
     return {
-        "project": project,
-        "analysis": analysis,
-        "model": GROQ_MODEL,
-        "status": "success",
+        "project":     project,
+        "analysis":    analysis,
+        "model":       GROQ_MODEL,
+        "status":      "success",
         "text_length": len(text),
     }
