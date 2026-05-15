@@ -8,6 +8,18 @@ Un système de génération augmentée par récupération (RAG) conçu pour les 
 
 ---
 
+## Fonctionnalités
+
+- Import de PDFs, DOCX et fichiers TXT
+- Ingestion d'e-mails avec métadonnées projet
+- Mémoire conversationnelle et contexte persistant
+- Multi-query RAG pour améliorer le rappel sémantique
+- Endpoint de conformité réglementaire
+- Recherche sémantique multilingue (FR / EN / AR)
+- Citations automatiques des sources
+- Dashboard web interactif
+
+
 ## Structure du projet
 
 ```
@@ -180,6 +192,21 @@ Le découpage utilise une fenêtre glissante : chaque chunk fait au maximum 500 
 
 ---
 
+### Multi-query RAG
+
+Avant la recherche vectorielle, le système peut générer plusieurs variantes sémantiques de la question utilisateur afin :
+- d'améliorer le rappel des documents,
+- de réduire les faux négatifs,
+- d'augmenter la pertinence des chunks récupérés.
+
+### Mémoire conversationnelle
+
+Le système conserve le contexte des échanges précédents afin de :
+- maintenir la continuité conversationnelle,
+- relier les décisions et informations projet,
+- améliorer la pertinence des réponses.
+
+
 ## Référence de configuration
 
 | Variable | Défaut | Description |
@@ -192,6 +219,22 @@ Le découpage utilise une fenêtre glissante : chaque chunk fait au maximum 500 
 | `EMBEDDING_MODEL` | `multilingual-e5-large` | Supporte le français, l'arabe et l'anglais |
 
 ---
+
+## Endpoint conformité réglementaire
+
+Le système inclut un endpoint dédié permettant :
+- l'analyse de conformité documentaire,
+- la vérification réglementaire,
+- l'assistance métier BTP,
+- l'évaluation de cohérence technique.
+
+Sources compatibles :
+- DTU
+- Normes NF / EN / ISO
+- Documentation technique
+- Documents projet internes
+
+
 
 ## Notes
 
